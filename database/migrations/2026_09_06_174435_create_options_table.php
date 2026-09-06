@@ -11,12 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('users', function (Blueprint $table) {
+        Schema::create('options', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->string('password');
-            $table->enum('role', ['student', 'admin'])->default('student');
+            $table->foreignId('question_id')
+                ->constrained('questions')
+                ->cascadeOnDelete();
+
+            $table->string('option_text', 500);
+            $table->boolean('is_correct')->default(false);
             $table->timestamps();
         });
     }
@@ -26,8 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('users');
-        Schema::dropIfExists('password_reset_tokens');
-        Schema::dropIfExists('sessions');
+        Schema::dropIfExists('options');
     }
 };
