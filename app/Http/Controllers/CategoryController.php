@@ -6,15 +6,37 @@ use Illuminate\Http\Request;
 use App\Models\Category;
 use App\Http\Requests\StoreCategoryRequest;
 use App\Http\Requests\UpdateCategoryRequest;
+use App\Http\Resources\CategoryResource;
 
 class CategoryController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return Category::latest()->paginate(15);
+        $query = Category::query();
+
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        $sort = $request->query('sort', 'created_at');
+        $direction = $request->query('direction', 'desc');
+
+        if (! in_array($sort, ['name', 'created_at'], true)) {
+            $sort = 'created_at';
+        }
+
+        if (! in_array($direction, ['asc', 'desc'], true)) {
+            $direction = 'desc';
+        }
+
+        $perPage = min(100, max(1, (int) $request->query('per_page', 15)));
+
+        return CategoryResource::collection(
+            $query->orderBy($sort, $direction)->paginate($perPage)
+        );
     }
 
     /**
@@ -24,7 +46,9 @@ class CategoryController extends Controller
     {
         $category = Category::create($request->validated());
 
-        return response()->json($category, 201);
+        return (new CategoryResource($category))
+            ->response()
+            ->setStatusCode(201);
     }
 
     /**
@@ -32,17 +56,19 @@ class CategoryController extends Controller
      */
     public function show(Category $category)
     {
-        return $category;
+        return new CategoryResource($category);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateCategoryRequest $request, Category $category)
-    {
+    public function update(
+        UpdateCategoryRequest $request,
+        Category $category
+    ) {
         $category->update($request->validated());
 
-        return $category;
+        return new CategoryResource($category);
     }
 
     /**

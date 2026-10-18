@@ -6,17 +6,58 @@ use Illuminate\Http\Request;
 use App\Http\Requests\StoreQuizRequest;
 use App\Http\Requests\UpdateQuizRequest;
 use App\Models\Quiz;
+use App\Http\Resources\QuizResource;
 
 class QuizController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return Quiz::with(['category', 'creator'])
-            ->latest()
-            ->paginate(15);
+        $query = Quiz::query();
+
+        // Filter by category
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+
+        // Filter by status
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        // Search by title
+        if ($request->filled('search')) {
+            $query->where(
+                'title',
+                'like',
+                '%' . $request->search . '%'
+            );
+        }
+
+        // Sorting
+        $sort = $request->query('sort', 'created_at');
+        $direction = $request->query('direction', 'desc');
+
+        if (! in_array($sort, ['title', 'duration', 'created_at'], true)) {
+            $sort = 'created_at';
+        }
+
+        if (! in_array($direction, ['asc', 'desc'], true)) {
+            $direction = 'desc';
+        }
+
+        // Pagination
+        $perPage = min(
+            100,
+            max(1, (int) $request->query('per_page', 15))
+        );
+
+        return QuizResource::collection(
+            $query->orderBy($sort, $direction)
+                ->paginate($perPage)
+        );
     }
 
     /**
@@ -26,7 +67,9 @@ class QuizController extends Controller
     {
         $quiz = Quiz::create($request->validated());
 
-        return response()->json($quiz, 201);
+        return (new QuizResource($quiz))
+            ->response()
+            ->setStatusCode(201);
     }
 
     /**
@@ -34,7 +77,7 @@ class QuizController extends Controller
      */
     public function show(Quiz $quiz)
     {
-        return $quiz->load(['category', 'creator', 'questions']);
+        return new QuizResource($quiz);
     }
 
     /**
@@ -44,7 +87,7 @@ class QuizController extends Controller
     {
         $quiz->update($request->validated());
 
-        return $quiz;
+        return new QuizResource($quiz);
     }
 
     /**

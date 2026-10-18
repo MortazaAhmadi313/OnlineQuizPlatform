@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Http\Requests\StoreQuestionRequest;
 use App\Http\Requests\UpdateQuestionRequest;
 use App\Models\Question;
+use App\Http\Resources\QuestionResource;
 
 class QuestionController extends Controller
 {
@@ -14,28 +15,36 @@ class QuestionController extends Controller
      */
     public function index()
     {
-        return Question::with(['quiz', 'options'])
-            ->latest()
-            ->paginate(15);
+        return QuestionResource::collection(
+            Question::with('options')
+                ->latest()
+                ->paginate(15)
+        );
     }
 
     public function store(StoreQuestionRequest $request)
     {
         $question = Question::create($request->validated());
 
-        return response()->json($question, 201);
+        return (new QuestionResource($question))
+            ->response()
+            ->setStatusCode(201);
     }
 
     public function show(Question $question)
     {
-        return $question->load(['quiz', 'options']);
+        return new QuestionResource(
+            $question->load('options')
+        );
     }
 
-    public function update(UpdateQuestionRequest $request, Question $question)
-    {
+    public function update(
+        UpdateQuestionRequest $request,
+        Question $question
+    ) {
         $question->update($request->validated());
 
-        return $question;
+        return new QuestionResource($question);
     }
 
     public function destroy(Question $question)
