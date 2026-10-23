@@ -13,9 +13,11 @@ class Question extends Model
     protected $fillable = [
         'quiz_id',
         'question_text',
+        'type',
         'points',
         'difficulty',
     ];
+
 
     public function quiz(): BelongsTo
     {

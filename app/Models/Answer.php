@@ -9,10 +9,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Answer extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'attempt_id',
         'question_id',
         'option_id',
+        'answer_text',
+        'awarded_points',
     ];
 
     public function attempt(): BelongsTo

@@ -2,28 +2,33 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\ValidationRule;
+use App\Models\Quiz;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreAttemptRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
-        return true;
+        $user = $this->user();
+
+        if (! $user || $user->role !== 'student') {
+            return false;
+        }
+
+        return Quiz::where('id', $this->input('quiz_id'))
+            ->where('status', 'published')
+            ->exists();
     }
 
     public function rules(): array
     {
         return [
-            'user_id' => 'required|integer|exists:users,id',
             'quiz_id' => 'required|integer|exists:quizzes,id',
-            'score' => 'sometimes|numeric|min:0',
-            'status' => 'sometimes|in:in_progress,completed,expired',
-            'started_at' => 'required|date',
-            'completed_at' => 'sometimes|nullable|date|after_or_equal:started_at',
+            'user_id' => 'prohibited',
+            'score' => 'prohibited',
+            'status' => 'prohibited',
+            'started_at' => 'prohibited',
+            'completed_at' => 'prohibited',
         ];
     }
 }

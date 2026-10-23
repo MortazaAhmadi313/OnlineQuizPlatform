@@ -10,9 +10,6 @@ use App\Http\Resources\CategoryResource;
 
 class CategoryController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index(Request $request)
     {
         $query = Category::query();
@@ -39,9 +36,6 @@ class CategoryController extends Controller
         );
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(StoreCategoryRequest $request)
     {
         $category = Category::create($request->validated());
@@ -51,17 +45,11 @@ class CategoryController extends Controller
             ->setStatusCode(201);
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(Category $category)
     {
         return new CategoryResource($category);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(
         UpdateCategoryRequest $request,
         Category $category
@@ -71,11 +59,14 @@ class CategoryController extends Controller
         return new CategoryResource($category);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Category $category)
     {
+        abort_unless(
+            request()->user()?->role === 'admin',
+            403,
+            'Only administrators can delete categories.'
+        );
+
         $category->delete();
 
         return response()->noContent();

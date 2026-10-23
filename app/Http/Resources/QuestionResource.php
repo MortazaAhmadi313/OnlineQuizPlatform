@@ -13,6 +13,7 @@ class QuestionResource extends JsonResource
             'id' => $this->id,
             'quiz_id' => $this->quiz_id,
             'question_text' => $this->question_text,
+            'type' => $this->type,
             'points' => $this->points,
             'difficulty' => $this->difficulty,
 

@@ -2,16 +2,41 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\ValidationRule;
+use App\Models\Quiz;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateQuestionRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
+        $user = $this->user();
+
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->role === 'admin') {
+            return true;
+        }
+
+        if ($user->role !== 'teacher') {
+            return false;
+        }
+
+        $question = $this->route('question');
+
+        if (! $question || ! Quiz::where('id', $question->quiz_id)
+            ->where('created_by', $user->id)
+            ->exists()) {
+            return false;
+        }
+
+        if ($this->filled('quiz_id')) {
+            return Quiz::where('id', $this->input('quiz_id'))
+                ->where('created_by', $user->id)
+                ->exists();
+        }
+
         return true;
     }
 
@@ -20,6 +45,7 @@ class UpdateQuestionRequest extends FormRequest
         return [
             'quiz_id' => 'sometimes|integer|exists:quizzes,id',
             'question_text' => 'sometimes|string',
+            'type' => 'sometimes|in:multiple_choice,true_false,short_answer,essay',
             'points' => 'sometimes|integer|min:1',
             'difficulty' => 'sometimes|in:easy,medium,hard',
         ];

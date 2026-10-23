@@ -10,33 +10,31 @@ use App\Http\Resources\QuizResource;
 
 class QuizController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    use \Illuminate\Foundation\Auth\Access\AuthorizesRequests;
     public function index(Request $request)
     {
+        $user = $request->user();
+
         $query = Quiz::query();
 
-        // Filter by category
+        if ($user->role === 'teacher') {
+            $query->where('created_by', $user->id);
+        } elseif ($user->role === 'student') {
+            $query->where('status', 'published');
+        }
+
         if ($request->filled('category_id')) {
             $query->where('category_id', $request->category_id);
         }
 
-        // Filter by status
-        if ($request->filled('status')) {
+        if ($request->filled('status') && $user->role !== 'student') {
             $query->where('status', $request->status);
         }
 
-        // Search by title
         if ($request->filled('search')) {
-            $query->where(
-                'title',
-                'like',
-                '%' . $request->search . '%'
-            );
+            $query->where('title', 'like', '%' . $request->search . '%');
         }
 
-        // Sorting
         $sort = $request->query('sort', 'created_at');
         $direction = $request->query('direction', 'desc');
 
@@ -48,53 +46,48 @@ class QuizController extends Controller
             $direction = 'desc';
         }
 
-        // Pagination
-        $perPage = min(
-            100,
-            max(1, (int) $request->query('per_page', 15))
-        );
+        $perPage = min(100, max(1, (int) $request->query('per_page', 15)));
 
         return QuizResource::collection(
-            $query->orderBy($sort, $direction)
-                ->paginate($perPage)
+            $query->orderBy($sort, $direction)->paginate($perPage)
         );
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(StoreQuizRequest $request)
     {
-        $quiz = Quiz::create($request->validated());
+        $this -> authorize('create', Quiz::class);
+
+        $data = $request->validated();
+
+        $data['created_by'] = $request->user()->id;
+
+        $quiz = Quiz::create($data);
 
         return (new QuizResource($quiz))
             ->response()
             ->setStatusCode(201);
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(Quiz $quiz)
     {
+        $this -> authorize('view', $quiz);
+
         return new QuizResource($quiz);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(UpdateQuizRequest $request, Quiz $quiz)
     {
+        $this -> authorize('update', $quiz);
+
         $quiz->update($request->validated());
 
         return new QuizResource($quiz);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Quiz $quiz)
     {
+        $this -> authorize('delete', $quiz);
+
         $quiz->delete();
 
         return response()->noContent();
