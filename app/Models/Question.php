@@ -33,4 +33,11 @@ class Question extends Model
     {
         return $this->hasMany(Answer::class);
     }
+
+    protected function casts(): array
+    {
+        return [
+            'points' => 'integer',
+        ];
+    }
 }

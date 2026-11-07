@@ -32,4 +32,11 @@ class Answer extends Model
     {
         return $this->belongsTo(Option::class);
     }
+
+    protected function casts(): array
+    {
+        return [
+            'awarded_points' => 'decimal:2',
+        ];
+    }
 }

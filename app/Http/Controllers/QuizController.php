@@ -20,7 +20,7 @@ class QuizController extends Controller
         if ($user->role === 'teacher') {
             $query->where('created_by', $user->id);
         } elseif ($user->role === 'student') {
-            $query->where('status', 'published');
+            $query->published();
         }
 
         if ($request->filled('category_id')) {
@@ -31,9 +31,7 @@ class QuizController extends Controller
             $query->where('status', $request->status);
         }
 
-        if ($request->filled('search')) {
-            $query->where('title', 'like', '%' . $request->search . '%');
-        }
+        $query->search($request->query('search'));
 
         $sort = $request->query('sort', 'created_at');
         $direction = $request->query('direction', 'desc');
@@ -55,7 +53,7 @@ class QuizController extends Controller
 
     public function store(StoreQuizRequest $request)
     {
-        $this -> authorize('create', Quiz::class);
+        $this->authorize('create', Quiz::class);
 
         $data = $request->validated();
 
@@ -70,14 +68,14 @@ class QuizController extends Controller
 
     public function show(Quiz $quiz)
     {
-        $this -> authorize('view', $quiz);
+        $this->authorize('view', $quiz);
 
         return new QuizResource($quiz);
     }
 
     public function update(UpdateQuizRequest $request, Quiz $quiz)
     {
-        $this -> authorize('update', $quiz);
+        $this->authorize('update', $quiz);
 
         $quiz->update($request->validated());
 
@@ -86,7 +84,7 @@ class QuizController extends Controller
 
     public function destroy(Quiz $quiz)
     {
-        $this -> authorize('delete', $quiz);
+        $this->authorize('delete', $quiz);
 
         $quiz->delete();
 

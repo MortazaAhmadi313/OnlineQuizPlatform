@@ -19,6 +19,20 @@ class Quiz extends Model
         'status',
     ];
 
+    public function scopeSearch($query, ?string $search)
+    {
+        if (blank($search)) {
+            return $query;
+        }
+
+        return $query->where('title', 'like', '%' . $search . '%');
+    }
+
+    public function scopePublished($query)
+    {
+        return $query->where('status', 'published');
+    }
+
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
@@ -42,5 +56,12 @@ class Quiz extends Model
     public function leaderboards(): HasMany
     {
         return $this->hasMany(Leaderboard::class);
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'duration' => 'integer',
+        ];
     }
 }

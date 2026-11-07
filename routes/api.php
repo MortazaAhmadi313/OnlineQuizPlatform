@@ -11,6 +11,7 @@ use App\Http\Controllers\AnswerController;
 use App\Http\Controllers\LeaderboardController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AvatarController;
 
 Route::prefix('v1')->group(function () {
 
@@ -33,6 +34,7 @@ Route::prefix('v1')->group(function () {
 
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
+        Route::post('/me/avatar', [AvatarController::class, 'store']);
 
         Route::apiResource('categories', CategoryController::class);
         Route::apiResource('quizzes', QuizController::class);

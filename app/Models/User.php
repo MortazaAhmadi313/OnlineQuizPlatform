@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Support\Facades\Storage;
 
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Laravel\Sanctum\HasApiTokens;
@@ -38,6 +40,15 @@ class User extends Authenticatable
     public function leaderboards(): HasMany
     {
         return $this->hasMany(Leaderboard::class);
+    }
+
+    protected function avatarUrl(): Attribute
+    {
+        return Attribute::get(
+            fn() => $this->avatar_path
+                ? Storage::disk('public')->url($this->avatar_path)
+                : null
+        );
     }
 
     protected function casts(): array
