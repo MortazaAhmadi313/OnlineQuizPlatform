@@ -16,6 +16,8 @@ class QuizResource extends JsonResource
             'duration' => $this->duration,
             'status' => $this->status,
             'category_id' => $this->category_id,
+            'created_by' => $this->created_by,
+            'questions_count' => $this->whenCounted('questions'),
         ];
     }
 }

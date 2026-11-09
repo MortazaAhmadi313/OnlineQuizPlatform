@@ -16,6 +16,14 @@ class LeaderboardResource extends JsonResource
             'attempt_id' => $this->attempt_id,
             'score' => $this->score,
             'rank' => $this->rank,
+
+            'user' => $this->whenLoaded('user', function () {
+                return [
+                    'id' => $this->user->id,
+                    'name' => $this->user->name,
+                    'avatar_url' => $this->user->avatar_url,
+                ];
+            }),
         ];
     }
 }

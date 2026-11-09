@@ -27,8 +27,19 @@ class QuestionController extends Controller
             });
         }
 
+        // Filter questions by quiz ID.
+        if ($request->filled('quiz_id')) {
+            $query->where('quiz_id', $request->query('quiz_id'));
+        }
+
+        // Limit pagination between 1 and 100.
+        $perPage = min(
+            100,
+            max(1, (int) $request->query('per_page', 15))
+        );
+
         return QuestionResource::collection(
-            $query->latest()->paginate(15)
+            $query->latest()->paginate($perPage)
         );
     }
 
@@ -109,7 +120,7 @@ class QuestionController extends Controller
 
         abort_unless(
             $user->role === 'teacher'
-            && (int) $quiz->created_by === (int) $user->id,
+                && (int) $quiz->created_by === (int) $user->id,
             403,
             'You are not allowed to manage this question.'
         );

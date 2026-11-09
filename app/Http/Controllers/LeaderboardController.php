@@ -12,7 +12,7 @@ class LeaderboardController extends Controller
     {
         $user = $request->user();
 
-        $query = Leaderboard::query()->with('quiz');
+        $query = Leaderboard::query()->with(['quiz', 'user']);
 
         // Admin can view all leaderboard entries.
         if ($user->role === 'admin') {
@@ -92,7 +92,9 @@ class LeaderboardController extends Controller
             'You are not allowed to view this leaderboard entry.'
         );
 
-        return new LeaderboardResource($leaderboard);
+        return new LeaderboardResource(
+            $leaderboard->load(['quiz', 'user'])
+        );
     }
 
     public function update(Request $request, Leaderboard $leaderboard)

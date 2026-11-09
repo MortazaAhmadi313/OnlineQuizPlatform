@@ -17,7 +17,7 @@ class AttemptController extends Controller
     {
         $user = $request->user();
 
-        $query = Attempt::query();
+        $query = Attempt::query()->with('user');
 
         if ($user->role === 'teacher') {
             $query->whereHas('quiz', function ($q) use ($user) {
@@ -66,7 +66,7 @@ class AttemptController extends Controller
             'completed_at' => null,
         ]);
 
-        return (new AttemptResource($attempt))
+        return (new AttemptResource($attempt->load('user')))
             ->response()
             ->setStatusCode(201);
     }
@@ -93,7 +93,7 @@ class AttemptController extends Controller
             'You are not allowed to view this attempt.'
         );
 
-        return new AttemptResource($attempt);
+        return new AttemptResource($attempt->load('user'));
     }
 
 
@@ -172,7 +172,7 @@ class AttemptController extends Controller
         ) {
             Leaderboard::updateBestScore($attempt);
         }
-        
+
         return response()->json([
             'message' => $attempt->status === 'expired'
                 ? 'The attempt has expired.'

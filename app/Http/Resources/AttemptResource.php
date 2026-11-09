@@ -2,7 +2,6 @@
 
 namespace App\Http\Resources;
 
-use App\Models\Answer;
 use App\Models\Question;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -34,9 +33,21 @@ class AttemptResource extends JsonResource
                 )
             );
 
+        $canViewStudent = $user
+            && in_array($user->role, ['admin', 'teacher'], true);
+
         return [
             'id' => $this->id,
             'user_id' => $this->user_id,
+
+            'user' => $this->when(
+                $canViewStudent && $this->relationLoaded('user'),
+                fn () => [
+                    'id' => $this->user->id,
+                    'name' => $this->user->name,
+                ]
+            ),
+
             'quiz_id' => $this->quiz_id,
             'score' => $canViewScore ? $this->score : null,
             'final_score_ready' => $finalScoreReady,

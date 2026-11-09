@@ -15,7 +15,7 @@ class QuizController extends Controller
     {
         $user = $request->user();
 
-        $query = Quiz::query();
+        $query = Quiz::query()->withCount('questions');
 
         if ($user->role === 'teacher') {
             $query->where('created_by', $user->id);
@@ -61,7 +61,7 @@ class QuizController extends Controller
 
         $quiz = Quiz::create($data);
 
-        return (new QuizResource($quiz))
+        return (new QuizResource($quiz->loadCount('questions')))
             ->response()
             ->setStatusCode(201);
     }
@@ -70,7 +70,9 @@ class QuizController extends Controller
     {
         $this->authorize('view', $quiz);
 
-        return new QuizResource($quiz);
+        return (new QuizResource($quiz->loadCount('questions')))
+            ->response()
+            ->setStatusCode(201);
     }
 
     public function update(UpdateQuizRequest $request, Quiz $quiz)
@@ -79,7 +81,7 @@ class QuizController extends Controller
 
         $quiz->update($request->validated());
 
-        return new QuizResource($quiz);
+        return new QuizResource($quiz->loadCount('questions'));
     }
 
     public function destroy(Quiz $quiz)
