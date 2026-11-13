@@ -13,6 +13,8 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AvatarController;
 
+use App\Http\Controllers\DashboardController;
+
 Route::prefix('v1')->group(function () {
 
     // Public routes
@@ -53,5 +55,6 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('answers', AnswerController::class);
         Route::apiResource('leaderboards', LeaderboardController::class);
         Route::apiResource('users', UserController::class);
+        Route::get('/dashboard', [DashboardController::class, 'index']);
     });
 });
