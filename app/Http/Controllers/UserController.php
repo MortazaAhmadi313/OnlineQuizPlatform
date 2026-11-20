@@ -8,12 +8,17 @@ use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
 use App\Http\Resources\UserResource;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
+    /**
+     * Display a listing of users.
+     */
     public function index(Request $request)
     {
         abort_unless($request->user()->role === 'admin', 403);
+
         $query = User::query();
 
         if ($request->filled('role')) {
@@ -45,6 +50,9 @@ class UserController extends Controller
         );
     }
 
+    /**
+     * Store a newly created user.
+     */
     public function store(StoreUserRequest $request)
     {
         $data = $request->validated();
@@ -57,35 +65,109 @@ class UserController extends Controller
             ->setStatusCode(201);
     }
 
+    /**
+     * Display the specified user.
+     */
     public function show(User $user)
     {
         abort_unless(auth()->user()->role === 'admin', 403);
+
         return new UserResource($user);
     }
 
+    /**
+     * Update the specified user.
+     */
     public function update(UpdateUserRequest $request, User $user)
     {
         $data = $request->validated();
 
-        if (isset($data['password'])) {
-            $data['password'] = Hash::make($data['password']);
+        $result = DB::transaction(function () use ($user, $data) {
+            $lockedUser = User::whereKey($user->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            // Protect the last administrator from role removal.
+            if (
+                $lockedUser->role === 'admin'
+                && isset($data['role'])
+                && $data['role'] !== 'admin'
+            ) {
+                $adminCount = User::where('role', 'admin')
+                    ->lockForUpdate()
+                    ->count();
+
+                if ($adminCount <= 1) {
+                    return 'last_admin';
+                }
+            }
+
+            if (isset($data['password'])) {
+                $data['password'] = Hash::make($data['password']);
+            }
+
+            $lockedUser->update($data);
+
+            return 'updated';
+        });
+
+        if ($result === 'last_admin') {
+            return response()->json([
+                'message' => 'The last administrator cannot be demoted.',
+            ], 409);
         }
 
-        $user->update($data);
-
-        return new UserResource($user);
+        return new UserResource($user->fresh());
     }
 
+    /**
+     * Remove the specified user.
+     */
     public function destroy(User $user)
     {
-        abort_unless(auth()->user()->role === 'admin', 403);
         if (auth()->id() === $user->id) {
             return response()->json([
                 'message' => 'You cannot delete your own account.',
             ], 403);
         }
 
-        $user->delete();
+        $result = DB::transaction(function () use ($user) {
+            $lockedUser = User::whereKey($user->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            // Preserve users who have quiz attempt history.
+            if ($lockedUser->attempts()->exists()) {
+                return 'has_attempts';
+            }
+
+            // Protect the last administrator.
+            if ($lockedUser->role === 'admin') {
+                $adminCount = User::where('role', 'admin')
+                    ->lockForUpdate()
+                    ->count();
+
+                if ($adminCount <= 1) {
+                    return 'last_admin';
+                }
+            }
+
+            $lockedUser->delete();
+
+            return 'deleted';
+        });
+
+        if ($result === 'has_attempts') {
+            return response()->json([
+                'message' => 'This user cannot be deleted because they have quiz attempt history.',
+            ], 409);
+        }
+
+        if ($result === 'last_admin') {
+            return response()->json([
+                'message' => 'The last administrator cannot be deleted.',
+            ], 409);
+        }
 
         return response()->noContent();
     }

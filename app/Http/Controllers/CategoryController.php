@@ -67,6 +67,13 @@ class CategoryController extends Controller
             'Only administrators can delete categories.'
         );
 
+        // Prevent deleting categories that have quizzes
+        if ($category->quizzes()->exists()) {
+            return response()->json([
+                'message' => 'This category cannot be deleted because it contains quizzes.',
+            ], 409);
+        }
+
         $category->delete();
 
         return response()->noContent();
